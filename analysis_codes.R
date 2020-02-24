@@ -1,6 +1,6 @@
 #PERMANOVA Global
-#Objects: NewCombinedSpecies, dfStudyPopulationTypeGlobal, SchirmerM_2016Individuals, Industrialized, NonIndustrialized, NonIndustrializedLike, Intermediate, IndustrializedLike, all_other_irish, core_species
-load("PERMANOVAWithinGlobal.RData")
+#Objects: NewCombinedSpecies, dfStudyPopulationTypeGlobal, SchirmerM_2016Individuals, Industrialized, NonIndustrialized, NonIndustrializedLike, Intermediate, IndustrializedLike, all_other_irish
+
 AdonisGlobalWithStudyConfounding <- adonis(as.dist(1-cor(t(NewCombinedSpecies[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),]),method="spearman")/2)~dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Study"]+dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Population"])
 lm_pcoAxis1_WithPopulation <- anova(lm(pcoNewCombinedSpecies$li[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),1]~dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Study"]+dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Population"]))
 lm_pcoAxis2_WithPopulation <- anova(lm(pcoNewCombinedSpecies$li[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),2]~dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Study"]+dfStudyPopulationTypeGlobal[setdiff(rownames(dfStudyPopulationTypeGlobal),SchirmerM_2016Individuals),"Population"]))
@@ -35,8 +35,15 @@ batch_wilcox <- function(x,y)
         return(t(out));
 }
 
-BatchWilcoxSpeciesNonIndustrialized_Industrialized <- batch_wilcox(t(NewCombinedSpecies[setdiff(Industrialized,SchirmerM_2016Individuals),]),t(NewCombinedSpecies[NonIndustrialized,]))
+SelectSpecies <- colnames(NewCombinedSpecies)[(which(100*apply(NewCombinedSpecies,2,function(x)(length(x[x>=0.01])))/ncol(NewCombinedSpecies)>5))]
+BatchWilcoxSpeciesNonIndustrialized_Industrialized <- batch_wilcox(t(NewCombinedSpecies[setdiff(Industrialized,SchirmerM_2016Individuals),SelectSpecies]),t(NewCombinedSpecies[NonIndustrialized,SelectSpecies]))
+SpeciesEnrichedNonIndustrialized <- rownames(BatchWilcoxSpeciesNonIndustrialized_Industrialized[(BatchWilcoxSpeciesNonIndustrialized_Industrialized[,2]==-1)&(BatchWilcoxSpeciesNonIndustrialized_Industrialized[,3]<0.15),])
+SpeciesDepletedNonIndustrialized <- rownames(BatchWilcoxSpeciesNonIndustrialized_Industrialized[(BatchWilcoxSpeciesNonIndustrialized_Industrialized[,2]==1)&(BatchWilcoxSpeciesNonIndustrialized_Industrialized[,3]<0.15),])
 
+SelectSpecies_TM <- colnames(tm_species)[which(100*apply(tm_species,2,function(x)(length(x[x>=0.01])))/ncol(tm_species)>5)]
+BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike <- batch_wilcox(t(NewCombinedSpecies[IndustrializedLike,SelectSpecies_TM]),t(NewCombinedSpecies[NonIndustrializedLike,SelectSpecies_TM]))
+SpeciesEnrichedNonIndustrializedLike <- rownames(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[,2]==-1)&(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[,3]<0.15),])
+SpeciesDepletedNonIndustrializedLike <- rownames(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[,2]==1)&(BatchWilcoxSpeciesNonIndustrializedLike_IndustrializedLike[,3]<0.15),])
 
 
 #Species Validation With Study as a confounder
@@ -60,10 +67,17 @@ pco_association_with_study_confounder = function(data,pco,study_data)
 		return(SpeciesAssociation)
 }
 
+pco2AssociationSpeciesDepleted <- pco_association_with_study_confounder(NewCombinedSpecies[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),SpeciesDepletedNonIndustrialized],pcoNewCombinedSpecies$li[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),],dfStudyPopulationTypeGlobal[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),])
+pco2AssociationSpeciesEnriched <- pco_association_with_study_confounder(NewCombinedSpecies[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),SpeciesEnrichedNonIndustrialized],pcoNewCombinedSpecies$li[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),],dfStudyPopulationTypeGlobal[setdiff(c(NonIndustrialized,Industrialized),SchirmerM_2016Individuals),])
 
+#Distance Profile of Microbiome Sub-groups and Residence Transition Groups 
+#Object: MicrobiomeResidenceTransitions Site_Site Site_House House_House AllIrish_NIvsI_Distance_Profile
+library(dunn.test)
 
-
-
+dunn.test(MicrobiomeResidenceTransitions[,"NonIndustrialized"],as.factor(MicrobiomeResidenceTransitions[,3],method="bh")
+dunn.test(MicrobiomeResidenceTransitions[,"Industrialized"],as.factor(MicrobiomeResidenceTransitions[,3],method="bh")
+dunn.test(AllIrish_NIvsI_Distance_Profile[,1],as.factor(AllIrish_NIvsI_Distance_Profile[,3]),method="bh")
+dunn.test(AllIrish_NIvsI_Distance_Profile[,2],as.factor(AllIrish_NIvsI_Distance_Profile[,3]),method="bh")
 
 #Objects: CombinedHeFD
 #HeFD Comparisons
@@ -90,5 +104,5 @@ dfClinical_Industrialized <- dfClinical_Industrialized[setdiff(rownames(dfClinic
 ggplot(dfClinical_NonIndustrialized,aes(x=R,y=-log(P,10))) + geom_point(color=ifelse(dfClinical_NonIndustrialized$P < 0.1,"Red",ifelse(dfClinical_NonIndustrialized$P < 0.2,"Darkgoldenrod1","Black")),size=10) + geom_text_repel(label=rownames(dfClinical_NonIndustrialized),size=10) + theme_bw() + geom_vline(xintercept=0) + geom_hline(yintercept=0) + theme(axis.text=element_text(size=20))
 ggplot(dfClinical_Industrialized,aes(x=R,y=-log(P,10))) + geom_point(color=ifelse(dfClinical_Industrialized$P < 0.1,"Red",ifelse(dfClinical_Industrialized$P < 0.2,"Darkgoldenrod1","Black")),size=10) + geom_text_repel(label=rownames(dfClinical_Industrialized),size=10) + theme_bw() + geom_vline(xintercept=0) + geom_hline(yintercept=0) + theme(axis.text=element_text(size=20))
 
-
+#Objects: 
 
