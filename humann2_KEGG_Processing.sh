@@ -11,6 +11,6 @@ done
 
 humann2_join_tables --input KEGG_Pathabundance/ --output TM_KEGG_Pathways.txt
 grep -v "UNMAPPED\|UNINTEGRATED" TM_KEGG_Pathways.txt > TM_KEGG_Pathways_Filtered.txt
-humann2_split_stratified_table --input TM_KEGG_Pathways_1.txt --output .
+humann2_split_stratified_table --input TM_KEGG_Pathways_Filtered.txt --output .
 
 
